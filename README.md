@@ -11,7 +11,7 @@ O arquivo está dividido em cinco diretórios principais:
     ├── API              # contém um servidor que roda uma API para realizar a comunicação entre o aplicativo e o banco de dados
     ├── Dataset          # contém as fotos e o banco de dados no formato sqlite
     ├── Model            # contém tudo relacionado aos os modelos de machine learning utilizados
-    ├── Camera2_v04      # contém tudo relacionado aos a aplicação Android
+    ├── Camera2_v04      # contém tudo relacionado a aplicação Android
     └── Venvs            # contém os ambientes virtuais utilizados no projeto
 ```
 
