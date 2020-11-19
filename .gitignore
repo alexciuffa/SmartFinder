@@ -1,0 +1,18 @@
+Probabilidade\ de\ atraso\ de\ parcelas/dados_entrada/*
+**/database/*
+**/lfw/*
+**/faces/*
+**/log.txt
+**/venvs/db_env/*
+**/venvs/server_env/*
+**/venvs/tf_2/*
+**/Model/faces/*
+**/Model/tflite/*
+**/Model/LocalPreprocessingFaces/saved_model/**
+**/Model/LocalPreprocessingFaces/notebooks/facenet.tflite
+**/Model/facenet.tflite
+**/Model/facenet_something.tflite
+**/Model/MobileFaceNet.tflite
+**/.DS_Store
+**/.ipynb_checkpoints
+**/__pycache__
