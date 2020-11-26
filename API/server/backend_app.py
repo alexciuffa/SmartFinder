@@ -77,12 +77,20 @@ class Match(db.Model):
                                                           self.request_id, 
                                                           self.person_id)
 
+      ########################
+########  Global variables  ########
+      ########################
+print("Iniciando o servidor...")
+db_embeddings = np.array([eval(image.embedding) for image in Image.query.all()])
+match_distance = 0.8
+
       #############
 ########  Views  ########
       #############
 
 @app.route('/get_wanted_people', methods=['POST'])
 def get_wanted_people():
+    start_time = time.time()
     if request.headers.get('x-api-key') != 'mySuperSecretKey':
         print("##########\nPermissão negada!!!\n##########")
         return jsonify({'error': 'Permission denied'}), 403
@@ -112,24 +120,36 @@ def get_wanted_people():
         print('Error in adding new_request')
         return jsonify({'error': 'Error in adding new_request'}), 500 # Internal Server Error
 
-    image_list = Image.query.all()
-
-    matches = []
-    for image in image_list:
-        distance = get_distance(request_embedding,image.embedding)
-        if distance < 1: # Precision: low (8), medium (7.5), high (7), extreame (6.5)
-            person_match = Person.query.filter(Person.id == image.person_id).first()
-            if is_new_match(matches, person_match.name):
-                matches.append({
-                    'person_name':person_match.name,
-                    'distance':distance
-                })
-            print('Image ID: {}'.format(image.id))
-            db.session.add(Match(request_id=new_request.id, image_id=image.id, person_id=image.person_id, distance=distance))
-
     try:
-        db.session.commit()
-        
+        request_embedding = np.array(eval(request_embedding))
+    except:
+        return jsonify({'error': 'Error in reading embedding'}), 500 # Internal Server Error
+
+    image_list = Image.query.all()
+    distances = np.linalg.norm(request_embedding - db_embeddings[None, :, :], axis=-1)[0]
+    matchs_info = [(image_list[index], distances[index]) for index in (np.where(distances<match_distance)[0])]
+    
+    matches = []
+    for image, distance in matchs_info:
+        person_match = Person.query.filter(Person.id == image.person_id).first()
+        if is_new_match(matches, person_match.name):
+            matches.append({
+                'person_name':person_match.name,
+                'distance':distance[0]
+            })
+        print("image id {}: distance {}".format(image.id, distance))
+        db.session.add(Match(request_id=new_request.id, image_id=image.id, person_id=image.person_id, distance=distance))
+
+    if len(matches) == 0:
+        matches.append({
+                'person_name':'Sem matchs',
+                'distance':0
+            })
+
+    end_time = time.time()
+    print("Total request time: {:d}m {:d}s".format(int((end_time - start_time)//60), int((end_time - start_time)%60)))
+    try:
+        db.session.commit()    
         return jsonify({'matches': matches}), 200 # OK
     except:
         print('Error in adding matches')
