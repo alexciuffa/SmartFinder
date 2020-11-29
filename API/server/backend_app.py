@@ -82,7 +82,7 @@ class Match(db.Model):
       ########################
 print("Iniciando o servidor...")
 db_embeddings = np.array([eval(image.embedding) for image in Image.query.all()])
-match_distance = 0.8
+match_distance = 1
 
       #############
 ########  Views  ########
@@ -197,6 +197,17 @@ def get_images():
             'created_at':image.created_at
         })
     return jsonify({'data': images}), 200
+
+@app.route('/get_count_images', methods=['GET'])
+def get_count_images():
+    image_query = Image.query.all()
+    #count = Person.query.count() # Testar isso
+
+    count = 0
+    for image in image_query:
+        count += 1
+
+    return jsonify({'data':count}), 200
 
 @app.route('/get_requests', methods=['GET'])
 def get_requests():

@@ -33,6 +33,8 @@ import java.util.Map;
 public class MatchResultActivity extends AppCompatActivity {
 
     private float[] new_face_embedding;
+    private double lat;
+    private double lon;
     private double person_distance;
     private PersonFile[] personArray;
     private String[] match_names;
@@ -53,14 +55,16 @@ public class MatchResultActivity extends AppCompatActivity {
         Bundle extras = getIntent().getExtras();
         if (extras != null) {
             new_face_embedding = extras.getFloatArray("vector_embedding");
+            lat = extras.getDouble("Lat");
+            lon = extras.getDouble("Lon");
         }
 
         loadingTextView.setText("Carregando...");
 
         /* Request */
         Map<String,String> params = new HashMap<String,String>();
-        params.put("lat", "3");
-        params.put("lon", "3");
+        params.put("lat", String.valueOf(lat));
+        params.put("lon", String.valueOf(lon));
         params.put("embedding", Arrays.toString(new_face_embedding));
         postRequest(params);
 

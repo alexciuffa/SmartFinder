@@ -25,7 +25,9 @@ Dentro do diretório `API/server/` executar o comando:
 
 ### Caminhos (routes)
  - GET - `/get_people`: retorna todas as pessoas cadastradas no banco de dados
+ - GET - `get_count_people`: retorna o número de pessoas cadastradas no banco de dados
  - GET - `/get_images`: retorna todas as imagens cadastradas no banco de dados
+ - GET - `get_count_images`: retorna o número de imagens cadastradas no banco de dados
  - GET - `/get_requests`: retorna todos os requests cadastradas no banco de dados
  - GET - `/get_matches`: retorna todos os matchs cadastradas no banco de dados
  - GET - `/time`: retorna o horário atual (puramente para teste de conexão)

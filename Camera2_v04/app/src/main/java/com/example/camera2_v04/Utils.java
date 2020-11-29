@@ -25,7 +25,7 @@ public class Utils {
             int g=0;//(int)(Math.random()*255);
             int b=0;//(int)(Math.random()*255);
             paint.setColor(Color.rgb(r, g, b));
-            paint.setStrokeWidth(1+bitmap.getWidth()/500 );
+            paint.setStrokeWidth(1+bitmap.getWidth()/300 );
             paint.setStyle(Paint.Style.STROKE);
             canvas.drawRect(rect, paint);
         }catch (Exception e){

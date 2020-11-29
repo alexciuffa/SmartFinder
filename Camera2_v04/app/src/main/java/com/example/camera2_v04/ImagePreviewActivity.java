@@ -1,17 +1,27 @@
 package com.example.camera2_v04;
 
+import android.Manifest;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
+import android.location.Location;
+import android.location.LocationManager;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 
 import java.io.FileNotFoundException;
 import java.util.Arrays;
@@ -21,10 +31,11 @@ import java.util.Vector;
 // https://www.tensorflow.org/lite/guide/inference#android_platform
 // https://firebase.google.com/docs/ml/android/use-custom-models
 public class ImagePreviewActivity extends AppCompatActivity {
+    private static final int REQUEST_LOCATION = 1;
+    private LocationManager locationManager;
 
     private ImageView faceView;
     private Button btnGenerateEncoding;
-    private TextView encoddingTextView;
 
     Bitmap face_image, face_crop_image;
     FaceNet facenet_model;
@@ -39,7 +50,6 @@ public class ImagePreviewActivity extends AppCompatActivity {
 
         faceView = (ImageView)findViewById(R.id.faceView);
         btnGenerateEncoding = (Button)findViewById(R.id.btnGenerateEncoding);
-        encoddingTextView = (TextView)findViewById(R.id.encodingTextView);
 
         facenet_model = new FaceNet(getAssets());
         mtcnn = new MTCNN(getAssets());
@@ -60,9 +70,43 @@ public class ImagePreviewActivity extends AppCompatActivity {
             }
         }
 
+        // Add permission
+        ActivityCompat.requestPermissions(this, new String[]
+                {Manifest.permission.ACCESS_FINE_LOCATION }, REQUEST_LOCATION);
+
         btnGenerateEncoding.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                Intent intent = new Intent(getBaseContext(), MatchResultActivity.class);
+
+                //locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+                locationManager = (LocationManager) getApplicationContext().getSystemService(Context.LOCATION_SERVICE);
+                //Check gps is enable
+                if(!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                    //Enable GPS
+                    OnGPS();
+                } else {
+                    //GPS is already enable
+                    Location myLocation = getLocation();
+                    if (myLocation != null) {
+                        double lat = myLocation.getLatitude();
+                        double lon = myLocation.getLongitude();
+                        intent.putExtra("Lat", lat);
+                        intent.putExtra("Lon", lon);
+                    } else {
+                        myLocation = getLocation();
+                        if (myLocation != null) {
+                            double lat = myLocation.getLatitude();
+                            double lon = myLocation.getLongitude();
+                            intent.putExtra("Lat", lat);
+                            intent.putExtra("Lon", lon);
+                        } else {
+                            intent.putExtra("Lat", 0.0);
+                            intent.putExtra("Lon", 0.0);
+                        }
+                    }
+                }
+
                 if (boxes.size() > 0) {
                     Toast.makeText(getApplicationContext(), "Searching for matches", Toast.LENGTH_SHORT).show();
 
@@ -75,9 +119,7 @@ public class ImagePreviewActivity extends AppCompatActivity {
 
                     float[] model_output = facenet_model.get_embedding(face_crop_image);
 
-                    //encoddingTextView.setText(Arrays.toString(model_output));
 
-                    Intent intent = new Intent(getBaseContext(), MatchResultActivity.class);
                     intent.putExtra("vector_embedding", model_output);
                     startActivity(intent);
 
@@ -125,6 +167,50 @@ public class ImagePreviewActivity extends AppCompatActivity {
         }catch (Exception e){
             e.printStackTrace();
         }
+    }
+
+    private Location getLocation() {
+
+        //Check Permissions
+        if(ActivityCompat.checkSelfPermission(ImagePreviewActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(ImagePreviewActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]
+                    {Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_LOCATION);
+        } else {
+
+            Location locationGPS = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            Location locationNetwork = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+            Location locationPassive = locationManager.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER);
+
+            if (locationGPS != null){
+                return locationGPS;
+            } else if (locationNetwork != null) {
+                return locationNetwork;
+            } else if (locationPassive != null) {
+                return locationPassive;
+            } else {
+                Toast.makeText(this, "Locations are null", Toast.LENGTH_SHORT).show();
+            }
+        }
+        return null;
+    }
+
+    private void OnGPS() {
+        final AlertDialog.Builder builder = new AlertDialog.Builder(this);
+
+        builder.setMessage("Enable GPS").setCancelable(false).setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+            }
+        }).setNegativeButton("NO", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                dialogInterface.cancel();
+            }
+        });
+        final AlertDialog alertDialog = builder.create();
+        alertDialog.show();
     }
 
 }
