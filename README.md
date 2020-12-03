@@ -1,5 +1,5 @@
 # SmartFinder
-Um app que permite identificar se uma pessoa é ou não procurada pela polícia por meio de uma foto.
+Um app que permite identificar se uma pessoa é ou não procurada pela polícia por meio de uma foto. A demosntração prática do app pode ser vista aqui: https://youtu.be/EvAyZxG0jrk.
 
 ## Introdução
 O arquivo está dividido em cinco diretórios principais:
