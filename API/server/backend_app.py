@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 #from flask_cors import CORS
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///../../Dataset/database/SmartFinder.db' #'sqlite:///test.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///../../Dataset/database/SmartFinder_200.db' #'sqlite:///test.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
@@ -41,7 +41,6 @@ class Person(db.Model):
 
     def __repr__(self):
         return '<Person {}: {} - status: {}>'.format(self.id, self.name, self.status)
-# Person(name='Alexandre Ciuffatelli', birthday=datetime(1996, 7, 8), status='Procurado', created_at=datetime(2020, 10, 28), updated_at=datetime(2020, 10, 28))
 
 class Image(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -80,9 +79,9 @@ class Match(db.Model):
       ########################
 ########  Global variables  ########
       ########################
-print("Iniciando o servidor...")
+#print("Iniciando o servidor...")
 db_embeddings = np.array([eval(image.embedding) for image in Image.query.all()])
-match_distance = 1
+match_distance = 0.8
 
       #############
 ########  Views  ########
@@ -90,6 +89,7 @@ match_distance = 1
 
 @app.route('/get_wanted_people', methods=['POST'])
 def get_wanted_people():
+    print()
     start_time = time.time()
     if request.headers.get('x-api-key') != 'mySuperSecretKey':
         print("##########\nPermissão negada!!!\n##########")
@@ -115,7 +115,7 @@ def get_wanted_people():
     db.session.add(new_request)
     try:
         db.session.flush()
-        print('New_request successfull')
+        #print('New_request successfull')
     except:
         print('Error in adding new_request')
         return jsonify({'error': 'Error in adding new_request'}), 500 # Internal Server Error
@@ -137,7 +137,7 @@ def get_wanted_people():
                 'person_name':person_match.name,
                 'distance':distance[0]
             })
-        print("image id {}: distance {}".format(image.id, distance))
+        print("image id: {} -> distance: {:0.3f}".format(image.id, distance[0]))
         db.session.add(Match(request_id=new_request.id, image_id=image.id, person_id=image.person_id, distance=distance))
 
     if len(matches) == 0:
@@ -147,7 +147,7 @@ def get_wanted_people():
             })
 
     end_time = time.time()
-    print("Total request time: {:d}m {:d}s".format(int((end_time - start_time)//60), int((end_time - start_time)%60)))
+    print("Total request time: {:d}m {:d}s\n".format(int((end_time - start_time)//60), int((end_time - start_time)%60)))
     try:
         db.session.commit()    
         return jsonify({'matches': matches}), 200 # OK
@@ -182,6 +182,36 @@ def get_count_people():
         count += 1
 
     return jsonify({'data':count}), 200
+
+@app.route('/get_myself', methods=['GET'])
+def get_myself():
+    #people_query = Person.query.filter(Person.id == 149)
+    person = Person.query.filter(Person.name == 'Alexandre_Ciuffatelli').first()
+
+    if person == None:
+        return jsonify({'data':'Person not found'}), 200
+    
+    response = {'Person':[], 'Images':[]}
+    response['Person'].append({
+            'id':person.id,
+            'name':person.name,
+            'birthday':person.birthday,
+            'status':person.status,
+            'created_at':person.created_at,
+            'updated_at':person.updated_at
+    })
+
+    image_query = Image.query.filter(Image.person_id == person.id)
+    for image in image_query:
+        response['Images'].append({
+            'id':image.id,
+            'person_id':image.person_id,
+            'path':image.path,
+            'embedding':image.embedding,
+            'created_at':image.created_at
+        })
+
+    return jsonify({'data':response}), 200
 
 @app.route('/get_images', methods=['GET'])
 def get_images():
@@ -238,6 +268,13 @@ def get_matches():
             'distance':match.distance
         })
     return jsonify({'data': matches}), 200
+
+@app.route('/delete_matches_requests', methods=['GET'])
+def delete_matches_requests():
+    Request.query.delete()
+    Match.query.delete()
+    db.session.commit() 
+    return jsonify({'message': 'Requests and Matchs deleted...'}), 200
 
 @app.route('/time', methods=['GET'])
 def get_current_time():
